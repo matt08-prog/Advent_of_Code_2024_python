@@ -6,6 +6,7 @@ input_file_name = "real_input.txt"
 with open(input_file_name) as file:
     for line in file:
         lines.append(line.strip())
+        
 print(lines)
 
 final_answer = 0
