@@ -1,8 +1,8 @@
 import re
 import sys
-input_file_name = "test_input_1.txt"
+# input_file_name = "test_input_1.txt"
 # input_file_name = "test_input_2.txt"
-# input_file_name = "test_input_3.txt"
+input_file_name = "test_input_3.txt"
 # input_file_name = "real_input.txt"
 equations = []
 start_of_updates = 0
@@ -22,11 +22,12 @@ with open(input_file_name) as file:
 
 final_answer = 0
 operators = 0 # 0 = +; 1 = *; 2 = ||
+exited = False
 # print(sys.maxsize)
 for equation_index, equation in enumerate(equations):
     print(equation_index)
     num_operands = len(equation["operands"])
-    # print(f"equation: {equation}")
+    print(f"equation: {equation}")
     skipped = 0
     index = 0
     final_goal = 3**(num_operands-1)
@@ -43,8 +44,9 @@ for equation_index, equation in enumerate(equations):
                 # index += 1
                 # skipped += 1
                 final_goal += 1
+                exited = True
                 break
-            if operator == 0:
+            elif operator == 0:
                 total += int(equation["operands"][i+1])
             elif operator == 1:
                 total *= int(equation["operands"][i+1])
@@ -58,11 +60,13 @@ for equation_index, equation in enumerate(equations):
 
             print(f"\tindex: {index}, i: {i}, opeator = {operator}, gave total: {total}")
         index += 1
-        if total == target_answer:
+        if total == target_answer and exited == False:
             final_answer += total
             break
+        exited = False
     # print(f"skipped: {skipped}")
 
 print(f"final_answer: {final_answer}") # answer: 
 # 527917185924 is too low
 # 264184044732519 is too high
+# 264183924871929 is too low
