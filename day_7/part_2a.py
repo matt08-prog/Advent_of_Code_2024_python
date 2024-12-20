@@ -1,123 +1,106 @@
 import re
-lines = []
-# input_file_name = "test_input_1.txt"
+import sys
+input_file_name = "test_input_1.txt"
 # input_file_name = "test_input_2.txt"
 # input_file_name = "test_input_3.txt"
-input_file_name = "real_input.txt"
+# input_file_name = "test_input_4.txt"
+input_file_name = "test_input_5.txt"
+# input_file_name = "real_input.txt"
+equations = []
+start_of_updates = 0
+updates = []
 
 with open(input_file_name) as file:
-    for line in file:
-        lines.append(line)
-print(len(lines))
+    lines = file.readlines()
+    
+    for line in lines:
+        # lines.append(line.strip())
+        if line != "\n":
+            # print(line[0:2])
+            numbers_from_line = re.findall("\d+", line)
+            equation_obj = {"answer":int(numbers_from_line[0]), "operands": numbers_from_line[1:]}
+            equations.append(equation_obj)
+            # print(equation_obj)
 
-mul_results_sum = 0
-do_period = True
-
-for line in lines:
-    multiply_instructions = []
-    multiply_instruction_locations = []
-    multiply_instruction_matches = re.finditer(r"mul\([0-9]+,[0-9]+\)", line)
-
-    for match in multiply_instruction_matches:
-        multiply_instructions.append(match.group())
-        multiply_instruction_locations.append(match.start())
-
-    print(multiply_instructions)
-    print(multiply_instruction_locations)
-    dos = re.finditer(r"do\(\)", line)
-
-    # dos_locations = [0]
-    dos_locations = []
-    start_locations = [i.start() for i in dos]
-    for locations in start_locations:
-        # dos_locations.append(*[i.start() for i in dos])
-        dos_locations.append(locations)
-    print(f"dos: {dos_locations}")
-
-    donts = re.finditer(r"don't\(\)", line)
-
-    dont_locations = [i.start() for i in donts]
-    print(f"don'ts {dont_locations}")
-
-    # donts = re.finditer(r"don\'t\(\)", line)
-    # print(multiply_instructions)
-    next_stop = dont_locations[0]
-    next_start = dos_locations[0]
-    dos_locations.pop(0)
-    dont_locations.pop(0)
-    print(f"dos: {dos_locations}\n")
-    # if len(dont_locations) == 0:
-    #     should_do = True
-    should_break = False
-
-    # for instruction in multiply_instructions:
-
+final_answer = 0
+operators = 0 # 0 = +; 1 = *; 2 = ||
+exited = False
+# print(sys.maxsize)
+for equation_index, equation in enumerate(equations):
+    # print(equation_index)
+    num_operands = len(equation["operands"])
+    print(f"equation: {equation}")
+    # skipped = 0
+    index = 0
+    # final_goal = 3**(num_operands-1)
+    target_answer = equation["answer"]
+    num_2s = 0
+    # while index < final_goal:
     while True:
-        assert(len(multiply_instruction_locations) == len(multiply_instructions))
-        if len(multiply_instruction_locations) == 0:
-            # should_break = True
-            print(f"next_stop: {next_stop}")
-            if next_stop != instruction_location + 1:
-                do_period = False
+        total = int(equation["operands"][0])
+        if num_2s < num_operands-1:
+            num_2s = 0
+
+            for i in range(0, num_operands-1):
+            # for i in range(num_operands-2, 0, -1):
+                operator = (index >> i*2) & 3
+                # if operator == 3:
+                #     # index += 1
+                #     # skipped += 1
+                #     final_goal += 1
+                #     exited = True
+                #     break
+                if operator == 0:
+                    total += int(equation["operands"][i+1])
+                elif operator == 1:
+                    total *= int(equation["operands"][i+1])
+                elif operator == 2:
+                    num_2s += 1
+                    total = int(str(total) + equation["operands"][i+1])
+
+            # print(equation["operands"])
+            # print(f"\tindex: {index}, i: {i}, opeator = {operator}, gave total: {total}, num_twos: {num_2s}, num_operands: {num_operands}")
+        elif num_2s == num_operands - 1:
+            width = (num_operands - 1) * 2
+            binary_string = f'{index:0{width}b}'
+            print(f"not found: {binary_string}: {index}")
+            if binary_string != ("10" * (num_operands - 2)) + "11":
+                print("error 2")
+                exit(-1)
             break
-        instruction = multiply_instructions[0]
-        instruction_location = multiply_instruction_locations[0]
-        if do_period:
-            if instruction_location < next_stop:
-                nums = [int(i) for i in re.findall(r"[0-9]+", instruction)]
-                product = nums[0] * nums[1]
-                mul_results_sum += product
-                print(f"{instruction_location}: in a do period ({instruction_location} < {next_stop}) {multiply_instruction_locations[0]}: {product} = {nums[0]} * {nums[1]}\t next_stop {next_stop}\t do_period {do_period}")
-                if len(multiply_instruction_locations) == 0:
-                    # should_break = True
-                    
-                    break
-                multiply_instruction_locations.pop(0)
-                multiply_instructions.pop(0)
-                continue
-            else:
-                print(f"{instruction_location}: no longer a do_period ({instruction_location} > {next_stop})")
-                do_period = False
-                # if len(dont_locations) != 0:
-                #     next_stop = dont_locations.pop(0)
-                while instruction_location > next_start:
-                    if len(dos_locations) != 0:
-                        next_start = dos_locations.pop(0)
-                    else:
-                        next_start = multiply_instruction_locations[-1] + 1
+        else:
+            print("error 2")
+            exit(-1)
+        if total == target_answer and exited == False:
+            final_answer += total
+            # print(f"{index:9b}")
+            # print(f"{index}")
+            width = (num_operands - 1) * 2
+            binary_string = f'{index:0{width}b}'
+            print(binary_string)
+            for operand_index, operand in enumerate(equation["operands"]):
+                sign = ""
+                match (index >> operand_index*2) & 3:
+                    case 0:
+                        sign = " + "
+                    case 1:
+                        sign = " * "
+                    case 2:
+                        sign = " || "
+                    case _:
+                        sign = "ERROR"
+                
+                binary_string = f'{operand} {sign}'
+                print(binary_string, end="")
+            # print(format(index, "05b"))
+            print()
+            break
+        index += 1
+        exited = False
+    # print(f"skipped: {skipped}")
 
-                if len(multiply_instruction_locations) == 0:
-                    # should_break = True
-                    break
-                multiply_instruction_locations.pop(0)
-                multiply_instructions.pop(0)
-        elif not do_period:
-            if instruction_location > next_start:
-                print(f"{instruction_location}: now a do_period again ({instruction_location} > {next_start})")
-                if instruction_location > next_start:
-                    do_period = True
-                    while instruction_location > next_stop:
-                        if len(dont_locations) != 0:
-                            next_stop = dont_locations.pop(0)
-                        else:
-                            next_stop = multiply_instruction_locations[-1] + 1
-
-                    # if len(dos_locations) != 0:
-                    #     next_start = dos_locations.pop(0)
-            else:
-                if len(multiply_instruction_locations) == 0:
-                    # should_break = True
-                    break
-                multiply_instruction_locations.pop(0)
-                multiply_instructions.pop(0)
-        # if should_break:
-        #     break
-
-print(f"final result: {mul_results_sum}") 
-# answer: 75,078,675 is too low
-# answer: 107,565,988 is too high
-# answer: 116,837,282 is too high
-# answer: 93,733,733 is wrong
-# answer: 93,289,293 is wrong
-
-# answer: 84893551 is correct
+print(f"final_answer: {final_answer}") # answer: 
+# 527917185924 is too low
+# 264184044732519 is too high
+# 264183924871929 is too low
+# 264184745723230 is wrong

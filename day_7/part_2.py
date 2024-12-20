@@ -1,6 +1,6 @@
 import re
 import sys
-# input_file_name = "test_input_1.txt"
+input_file_name = "test_input_1.txt"
 # input_file_name = "test_input_2.txt"
 input_file_name = "test_input_3.txt"
 # input_file_name = "real_input.txt"
