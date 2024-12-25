@@ -5,10 +5,10 @@ final_answer = 0
 input_file_name = "test_input_1.txt" # 140
 # input_file_name = "test_input_2.txt" # 772
 # input_file_name = "test_input_3.txt" # 1930
-# input_file_name = "test_input_4.txt"
-# input_file_name = "test_input_5.txt"
-input_file_name = "real_input.txt"
-debug = False
+input_file_name = "test_input_4.txt" # 21 * 34 = 798
+input_file_name = "test_input_5.txt"
+# input_file_name = "real_input.txt"
+debug = True
 
 def test_letter(x, y):
     if y >= 0 and y < num_rows and x >= 0 and x < num_cols:
@@ -41,10 +41,11 @@ l_r_dirs = [[-1, 0], [1, 0]]
 u_d_dirs = [[0, -1], [0, 1]]
 
 
-def print_i(string_to_print):
+def print_i(string_to_print, debug_priorty=0):
     global debug
-    if debug:
+    if debug and debug_priorty > 0:
         print(string_to_print)
+    
 
 def search_group(start_pos, search_char):
     global num_rows
@@ -134,12 +135,12 @@ def search_group(start_pos, search_char):
                                         next_row_starts.append(col)
                                         # check if first element in searched row has left wall or if last element in searched row has right wall
                                         
-                                        # print_i(f"\t\tnext_row_starts added x: {col}, y:{row+vert_dir}")
+                                        print_i(f"\t\tnext_row_starts added x: {col}, y:{row+vert_dir}")
                                     next_row_tests.append(col)
 
                             else:
                                 # if [row+vert_dir, col] not in found_walls_down: Redundant?
-                                # print_i(f"\t\t\tvert wall at x: {col}, y: {row+vert_dir}")
+                                print_i(f"\t\t\tvert wall at x: {col}, y: {row+vert_dir}")
                                 # found_walls.append([row+vert_dir, col])
                                 walls += 1
 
@@ -181,7 +182,7 @@ def search_group(start_pos, search_char):
 
     found_plants.sort()
 
-    print_i(f"{search_char} has {num_plants} plants and {walls} walls = {final_score}")
+    print_i(f"{search_char} has {num_plants} plants and {walls} walls = {final_score}", 1)
     print_i(f"plant_poses: {found_plants}")
     return final_score
 
@@ -201,14 +202,15 @@ for row in range(num_rows):
             result = search_group([row, col], test_char)
             print_i("\n")
             final_answer += result
+        break
 
 
         # for dir in dirs:
 
 print("\n\n\n")
 
-for line in plants:
-    print(line)
+# for line in plants:
+#     print(line)
 
 print(final_answer) # answer: 
 # 1420139 is too low
