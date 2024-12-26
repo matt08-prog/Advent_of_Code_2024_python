@@ -3,11 +3,15 @@ import string
 lines = []
 final_answer = 0
 input_file_name = "test_input_1.txt" # 140
-# input_file_name = "test_input_2.txt" # 772
-# input_file_name = "test_input_3.txt" # 1930
+input_file_name = "test_input_2.txt" # 772
+input_file_name = "test_input_3.txt" # 1930
 input_file_name = "test_input_4.txt" # 21 * 34 = 798
-input_file_name = "test_input_5.txt"
-# input_file_name = "real_input.txt"
+# input_file_name = "test_input_5.txt"
+# input_file_name = "test_input_6.txt" # 267 * 163
+input_file_name = "test_input_7.txt" # 265 * 152 = 40280 for second block
+input_file_name = "test_input_8.txt" # 68628
+input_file_name = "test_input_9.txt" # 1202
+input_file_name = "real_input.txt"
 debug = True
 
 def test_letter(x, y):
@@ -25,15 +29,17 @@ with open(input_file_name) as file:
     for line in file:
         stripped_line = list(line.strip())
         plants.append(["0", *stripped_line, "0"])
-    num_rows = len(plants) + 1
     num_cols = len(plants[0])
     plants.insert(0, list("0" * (num_cols)))
     plants.append(list("0" * (num_cols)))
+    num_rows = len(plants)
 
+print(num_rows)
+print(num_cols)
         # stones = re.findall(r"", stripped_line)
 
-for line in plants:
-    print(line)
+# for line in plants:
+#     print(line)
 
 
 # dirs = [[1, 0], [0, 1], [-1, 0], [0, -1]]
@@ -50,6 +56,7 @@ def print_i(string_to_print, debug_priorty=0):
 def search_group(start_pos, search_char):
     global num_rows
     global num_cols
+    print(num_cols)
 
     if plants[start_pos[0]][start_pos[1]] != search_char:
         return 0
@@ -179,12 +186,12 @@ def search_group(start_pos, search_char):
         plants[plant[0]][plant[1]] = "0"
     
     final_score += walls * num_plants
-
+    assert(num_plants == len(found_plants))
     found_plants.sort()
 
     print_i(f"{search_char} has {num_plants} plants and {walls} walls = {final_score}", 1)
-    print_i(f"plant_poses: {found_plants}")
-    return final_score
+    # print_i(f"plant_poses: {found_plants}")
+    return [final_score, num_plants]
 
 
 
@@ -192,17 +199,19 @@ checked = []
 groups = []
 group_index = 0
 final_answer = 0
+final_num_plants = 0
 
-for row in range(num_rows):
-    for col in range(num_cols):
+for row in range(1, num_rows-1):
+    for col in range(1, num_cols-1):
         # test_pos = [col, row]
         test_char = plants[row][col]
         if test_char != "0":
             print_i(f"\nstarted {test_char} at x: {col}, y: {row}")
             result = search_group([row, col], test_char)
             print_i("\n")
-            final_answer += result
-        break
+            final_answer += result[0]
+            final_num_plants += result[1]
+        # break
 
 
         # for dir in dirs:
@@ -212,5 +221,6 @@ print("\n\n\n")
 # for line in plants:
 #     print(line)
 
+print(f"final_num_plants: {final_num_plants}") # answer: 
 print(final_answer) # answer: 
 # 1420139 is too low
