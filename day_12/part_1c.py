@@ -3,15 +3,16 @@ import string
 lines = []
 final_answer = 0
 input_file_name = "test_input_1.txt" # 140
-input_file_name = "test_input_2.txt" # 772
-input_file_name = "test_input_3.txt" # 1930
-input_file_name = "test_input_4.txt" # 21 * 34 = 798
-# input_file_name = "test_input_5.txt"
-# input_file_name = "test_input_6.txt" # 267 * 163
-input_file_name = "test_input_7.txt" # 265 * 152 = 40280 for second block
-input_file_name = "test_input_8.txt" # 68628
-input_file_name = "test_input_9.txt" # 1202
-input_file_name = "real_input.txt"
+# input_file_name = "test_input_2.txt" # 772
+# input_file_name = "test_input_3.txt" # 1930
+# input_file_name = "test_input_4.txt" # 21 * 34 = 798
+# # input_file_name = "test_input_5.txt"
+# # input_file_name = "test_input_6.txt" # 267 * 163
+# input_file_name = "test_input_7.txt" # 265 * 152 = 40280 for second block
+# input_file_name = "test_input_8.txt" # 68628
+# input_file_name = "test_input_9.txt" # 1202
+# input_file_name = "test_input_10.txt" # 1202
+# input_file_name = "real_input.txt"
 debug = True
 
 def test_letter(x, y):
@@ -86,14 +87,7 @@ def search_group(start_pos, search_char):
     end_col = 0
     col_inc = -1
 
-    # for col in range(start_col, end_col, col_inc):
-    #     if plants[start_row][col] == search_char and col not in next_row_starts and col + col_inc not in next_row_starts:
-    #         next_row_starts.append([start_row, col])
-    
-    # for col in range(start_col+1, num_cols, 1):
-    #     if plants[start_row][col] == search_char and col not in next_row_starts and col + col_inc not in next_row_starts:
-    #         next_row_starts.append([start_row, col])
-
+    should_break = False
     next_row_start_index = 0
     for vert_dir in [1, -1]: # scans rows top to bottom then bottom to top
         for row in range(start_row, end_row, vert_dir):
@@ -135,6 +129,7 @@ def search_group(start_pos, search_char):
                                         found_walls_down.append([row, col+(hor_dir * 0.25)])
                                         print_i(f"\t\t\tside wall A at x: {col+hor_dir}, y: {row}, hor_dir: {hor_dir}")
                                         walls += 1
+                                        should_break = True
 
                             if plants[row+vert_dir][col] == test_char:
                                 if col not in next_row_starts: # can be removed if the right pass starts at start + 1 instead of start column
@@ -150,6 +145,11 @@ def search_group(start_pos, search_char):
                                 print_i(f"\t\t\tvert wall at x: {col}, y: {row+vert_dir}")
                                 # found_walls.append([row+vert_dir, col])
                                 walls += 1
+
+                            if should_break:
+                                should_break = False
+                                next_row_tests = []
+                                break
 
                         elif [row, col] not in found_plants:
                             # You reached the end of this wall 
@@ -224,3 +224,4 @@ print("\n\n\n")
 print(f"final_num_plants: {final_num_plants}") # answer: 
 print(final_answer) # answer: 
 # 1420139 is too low
+# final answer: 1433460
