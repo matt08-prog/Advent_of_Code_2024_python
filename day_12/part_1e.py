@@ -1,77 +1,6 @@
 import math
-import random
 import re
 import string
-
-import pygame
-import sys
-
-
-
-# Set up the display
-WIDTH, HEIGHT = 800, 600
-GRID_SIZE = 20
-SCREEN = None
-
-# Colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-
-def draw_grid(positions, walls):
-    global SCREEN
-    SCREEN.fill(WHITE)
-    
-    # Draw grid lines
-    for x in range(0, WIDTH, GRID_SIZE):
-        pygame.draw.line(SCREEN, BLACK, (x, 0), (x, HEIGHT))
-    for y in range(0, HEIGHT, GRID_SIZE):
-        pygame.draw.line(SCREEN, BLACK, (0, y), (WIDTH, y))
-    
-    # Draw squares at specified positions
-    for pos in positions:
-        y, x = pos
-        pygame.draw.rect(SCREEN, BLACK, (x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
-    
-    # Draw red X's at wall positions
-    for wall in walls:
-        y, x, color_index = wall
-        center_x = x * GRID_SIZE + GRID_SIZE // 2
-        center_y = y * GRID_SIZE + GRID_SIZE // 2
-        color = get_color(color_index)
-        size = GRID_SIZE // 4
-        pygame.draw.line(SCREEN, color, (center_x - size, center_y - size), (center_x + size, center_y + size), 2)
-        pygame.draw.line(SCREEN, color, (center_x - size, center_y + size), (center_x + size, center_y - size), 2)
-
-    pygame.display.flip()
-
-def main(positions, walls):
-    global SCREEN
-    # Example grid positions and walls
-    # positions = [(1, 1), (3, 3), (5, 2)]
-    # walls = [(2, 1), (3, 2), (4, 3)]
-    
-    # Initialize Pygame
-    pygame.init()
-    SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Grid with Squares and Walls")
-
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-        
-        draw_grid(positions, walls)
-    
-    pygame.quit()
-    sys.exit()
-
-# if __name__ == "__main__":
-#     main()
-
-
-
 lines = []
 final_answer = 0
 input_file_name = "test_input_1.txt" # 140
@@ -85,8 +14,7 @@ input_file_name = "test_input_3.txt" # 1930
 # input_file_name = "test_input_9.txt" # 1202
 input_file_name = "test_input_10.txt" # 40 * 80 = 3200
 input_file_name = "test_input_11.txt" # 50 * 96 = 4800
-input_file_name = "test_input_12.txt" # 50 * 96 = 4800
-input_file_name = "real_input.txt"
+# input_file_name = "real_input.txt"
 debug = True
 
 def print_i(string_to_print, debug_priorty=0):
@@ -121,9 +49,7 @@ for line in plants:
     print(line)
 
 
-def get_color(seed):
-    random.seed(seed)
-    return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+    
 
 def search_group(start_pos, search_char):
     global num_rows
@@ -186,7 +112,11 @@ def search_group(start_pos, search_char):
                                     if col in row_starts:
                                         col_in_row_starts = row_starts.index(col)
                                         print_i(f"\t\t\t\t[{next_row_start_index-1}] row_starts was: {row_starts}")
+                                        # row_starts.pop(col_in_row_starts)
                                         row_starts[col_in_row_starts] = -1
+                                        # if col_in_row_starts < col:
+                                            # next_row_start_index -= 1
+                                            # next_row_start_index_inc -= 1
                                         print_i(f"\t\t\t\t[{next_row_start_index-1}] row_starts is: {row_starts}")
                                 if [row-vert_dir*0.1, col] not in found_plants and [row+vert_dir*0.1, col] not in found_plants:
                                 # if [row-vert_dir*0.1, col] not in found_plants:
@@ -226,12 +156,7 @@ def search_group(start_pos, search_char):
                                         print_i(f"\t\t\tedge case found at x: {col}, y: {row-vert_dir}")
                                         found_edge_case = True
                                         locations_to_check.append([row-vert_dir, col])
-                                elif[row-vert_dir*0.25, col] not in found_walls:
-                                    print_i(f"\t\t\tvert wall at x: {col}, y: {row-vert_dir*0.25}")
-                                    found_walls.append([row-vert_dir*0.25, col])
-                                    walls += 1
-                                    
-
+                                
                                 if should_break:
                                     should_break = False
                                     next_row_tests = []
@@ -282,6 +207,7 @@ def search_group(start_pos, search_char):
     for plant in found_plants:
         plants[round(plant[0])][round(plant[1])] = "0"
     
+    final_score += walls * num_plants
     print_i(f"num_plants: {num_plants} should equal found_plants: {found_plants}")
     assert(num_plants == len(found_plants))
     found_plants.sort()
@@ -289,59 +215,6 @@ def search_group(start_pos, search_char):
     print_i(f"{search_char} has {num_plants} plants and {walls} walls = {final_score}", 1)
     print_i(f"plant_poses: {found_plants}")
     print_i(f"WALL_POSES: {found_walls}", 1)
-
-    for wall in range(len(found_walls)):
-        found_walls[wall].append(-1)
-
-    # num_straight_walls = 0
-    dirs = [[1.0, 0.0], [0.0, 1.0], [-1.0, 0.0], [0.0, -1.0]]
-    good_dirs = []
-    wall_index = 0
-    straight_wall_index = 0
-    while wall_index < len(found_walls) and wall_index >= 0:
-        
-        good_dirs = []
-        wall = found_walls[wall_index]
-        if wall[2] != -1:
-            wall_index += 1
-            continue
-        else:
-            wall[2] = straight_wall_index
-
-        first_wall = wall
-        for dir in dirs:
-            if [wall[0] + dir[0], wall[1] + dir[1], -1] in found_walls:
-                good_dirs.append(dir)
-        
-        print_i(f"good dirs: {good_dirs}")
-
-        for dir in good_dirs:
-            wall = first_wall
-            while [wall[0] + dir[0], wall[1] + dir[1], -1] in found_walls:
-                next_wall_index = found_walls.index([wall[0] + dir[0], wall[1] + dir[1], -1])
-                # wall = [wall[0] + dir[0], wall[1] + dir[1]]
-                found_walls[next_wall_index][2] = straight_wall_index
-                wall =  found_walls[next_wall_index]
-
-                # if col in row_starts:
-                #     col_in_row_starts = row_starts.index(col)
-                #     print_i(f"\t\t\t\t[{next_row_start_index-1}] row_starts was: {row_starts}")
-                #     row_starts[col_in_row_starts] = -1
-                #     print_i(f"\t\t\t\t[{next_row_start_index-1}] row_starts is: {row_starts}")
-        
-        straight_wall_index += 1
-        wall_index += 1
-    
-    found_walls = sorted(found_walls, key=lambda x: x[2])
-
-    print_i(f"{len(found_walls)} straight walls found: {found_walls}")
-
-
-
-
-    # main(found_plants, found_walls)
-    # final_score += walls * num_plants
-    final_score += straight_wall_index * num_plants
     return [final_score, num_plants]
 
 
@@ -372,5 +245,7 @@ for line in plants:
     print(line)
 
 print(f"final_num_plants: {final_num_plants}") # answer: 
-print(final_answer) 
-# final answer: 855082
+print(final_answer) # answer: 
+# 1420139 is too low
+# 1426422 is too low
+# final answer: 1433460
