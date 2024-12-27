@@ -364,8 +364,6 @@ for row in range(1, num_rows-1):
             final_num_plants += result[1]
         # break
 
-
-
 print("\n\n\n")
 
 for line in plants:
