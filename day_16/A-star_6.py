@@ -7,13 +7,17 @@ import random
 import re
 import string
 
+# # Set up the display
+# scale = 2.0
+# WIDTH, HEIGHT = int(400*scale), int(300*scale)
+# GRID_SIZE = int(20*scale)
+# SCREEN = None
+
 import pygame
 import sys
 
 # Set up the display
-scale = 1.5
-WIDTH, HEIGHT = int(800*scale), int(600*scale)
-GRID_SIZE = int(20*scale)
+WIDTH, HEIGHT = 1080, 720
 SCREEN = None
 
 # Colors
@@ -22,66 +26,206 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+GRAY = (50, 50, 50)
 
+class Camera:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.x = 0
+        self.y = 0
+        self.zoom = 1
 
-def draw_grid(start, end, walls, paths):
+    def apply(self, x, y):
+        return ((x - self.x) * self.zoom, (y - self.y) * self.zoom)
+    
+    def apply_1(self, x, y):
+        return ((x - self.x), (y - self.y))
+    
+    def apply_2(self, x, y):
+        return ((x - self.x), (y - self.y))
+
+    def reverse_apply(self, x, y):
+        return (x / self.zoom + self.x, y / self.zoom + self.y)
+
+camera = Camera(WIDTH, HEIGHT)
+
+def draw_grid(start, end, walls, paths, final_path):
     global SCREEN
     SCREEN.fill(WHITE)
+    # final_path = []
+    # start = []
+    # end = []
     
-    # Draw grid lines
-    for x in range(0, WIDTH, GRID_SIZE):
-        pygame.draw.line(SCREEN, BLACK, (x, 0), (x, HEIGHT))
-    for y in range(0, HEIGHT, GRID_SIZE):
-        pygame.draw.line(SCREEN, BLACK, (0, y), (WIDTH, y))
+    grid_size = int(20 * camera.zoom)
+    # grid_size = 20 * camera.zoom
+    # grid_size = camera.zoom
+    # grid_size = int(20)
+    # grid_size = int(camera.apply(20 * camera.zoom, 20 * camera.zoom)[0])
+    
+    # # Draw grid lines
+    # for x in range(0, WIDTH, grid_size):
+    #     start_pos = camera.apply(x, 0)
+    #     end_pos = camera.apply(x, HEIGHT)
+    #     pygame.draw.line(SCREEN, BLACK, start_pos, end_pos)
+    # for y in range(0, HEIGHT, grid_size):
+    #     start_pos = camera.apply(0, y)
+    #     end_pos = camera.apply(WIDTH, y)
+    #     pygame.draw.line(SCREEN, BLACK, start_pos, end_pos)
     
     # Draw squares at specified positions
-    for pos in [start, end]:
-        x, y = pos
-        pygame.draw.rect(SCREEN, RED, (x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+    if start or end:
+        for pos in [start, end]:
+            x, y = camera.apply_2(pos[0] * grid_size, pos[1] * grid_size)
+            # x, y = pos[0] * grid_size, pos[1] * grid_size
+            # gs = camera.apply(grid_size, grid_size)[0]
+            gs = grid_size * camera.zoom
+            # gs = grid_size * camera.zoom * camera.zoom
+            pygame.draw.rect(SCREEN, RED, (x, y, grid_size, grid_size))
 
-    # Draw squares at specified positions
+    # Draw walls
     for pos in walls:
-        x, y = pos
-        pygame.draw.rect(SCREEN, BLACK, (x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+        # x, y = camera.apply_1(pos[0] * grid_size, pos[1] * grid_size)
+        # x, y = (pos[0] * grid_size, pos[1] * grid_size)
+        x, y = camera.apply_2(pos[0] * grid_size, pos[1] * grid_size)
+        # x, y = pos[0] * grid_size, pos[1] * grid_size
+        # pygame.draw.rect(SCREEN, BLACK, (x, y, grid_size, grid_size))
 
+        # gs = camera.apply(grid_size, grid_size)[0]
+        # gs = camera.apply(grid_size * camera.zoom, grid_size * camera.zoom)[0]
+        # gs = int(grid_size * camera.zoom)
+        # gs = grid_size * camera.zoom * camera.zoom
+        pygame.draw.rect(SCREEN, BLACK, (x, y, grid_size, grid_size))
+
+    # Draw path squares and render score text
+    # font = pygame.font.Font(None, int(grid_size * 0.3))
+    font = pygame.font.Font(None, int(grid_size * 0.3))
     for pos in paths:
         x, y, score = pos
-        pygame.draw.rect(SCREEN, (50, 50, 50), (x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+        # x, y = camera.apply_1(x * grid_size, y * grid_size)
+        # x, y = (x * grid_size, y * grid_size)
+        x, y = camera.apply_2(x * grid_size, y * grid_size)
+        # x, y = pos[0] * grid_size, pos[1] * grid_size
+        # pygame.draw.rect(SCREEN, GRAY, (x, y, grid_size, grid_size))
+        # gs = camera.apply(grid_size, grid_size)[0]
+        # gs = int(grid_size * camera.zoom)
+        # gs = grid_size * camera.zoom * camera.zoom
+        pygame.draw.rect(SCREEN, GRAY, (x, y, grid_size, grid_size))
+
+        # Render score text
+        text = font.render(str(score), True, WHITE)
+        text_rect = text.get_rect(center=(x + grid_size // 2, y + grid_size // 2))
+        # SCREEN.blit(text, text_rect)
+    
+    for pos in final_path:
+        x, y, score = pos
+        x, y = camera.apply_2(x * grid_size, y * grid_size)
+        # x, y = pos[0] * grid_size, pos[1] * grid_size
+        # pygame.draw.rect(SCREEN, GREEN, (x, y, grid_size, grid_size))
+        # gs = camera.apply(grid_size, grid_size)[0]
+        # gs = grid_size * camera.zoom
+        gs = grid_size * camera.zoom * camera.zoom
+        pygame.draw.rect(SCREEN, GREEN, (x, y, grid_size, grid_size))
+
+        # Render score text
+        text = font.render(str(score), True, BLACK)
+        text_rect = text.get_rect(center=(x + grid_size // 2, y + grid_size // 2))
+        SCREEN.blit(text, text_rect)
 
     pygame.display.flip()
 
-def main_pygame(start, end, walls, paths):
-    global SCREEN
+def main_pygame(start, end, walls, paths, final_path):
+    global SCREEN, camera
     
-    # Initialize Pygame
     pygame.init()
     SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Grid with Squares and Walls")
+    pygame.display.set_caption("Grid with Squares, Walls, and Scores")
 
     running = True
+    panning = False
+    pan_start = None
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:  # Check if the ESC key is pressed
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
                     running = False
+                if event.key == pygame.K_f:
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    # camera.x = (((mouse_x / camera.zoom) / camera.zoom) / 20.0) + camera.x
+                    camera.x = (((mouse_x))) + camera.x / camera.zoom - WIDTH / 2
+                    camera.y = (((mouse_y))) + camera.y / camera.zoom - HEIGHT / 2
+                    # camera.y = mouse_y * camera.zoom + camera.y
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Left mouse button
+                    panning = True
+                    pan_start = event.pos
+                elif event.button in (4, 5):  # Mouse wheel for zooming
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    # cz = camera.zoom * camera.zoom
+
+                    mouse_world_x = mouse_x * camera.zoom + camera.x
+                    mouse_world_y = mouse_y * camera.zoom + camera.y
+
+                    gx = camera.x + (WIDTH / 2) * camera.zoom
+                    gy = camera.y + (HEIGHT / 2) * camera.zoom
+
+
+                    # camera.x = mouse_x * camera.zoom + camera.x
+                    # mouse_world_x = camera.apply(mouse_x, mouse_x)[0]
+                    # mouse_world_y = mouse_y / camera.zoom + camera.y
+
+                    # mouse_world_x = mouse_x / cz + camera.x
+                    # mouse_world_y = mouse_y / cz + camera.y
+                    
+                    if event.button == 4:  # Zoom in
+                        camera.zoom *= 1.1
+                    elif event.button == 5:  # Zoom out
+                        camera.zoom /= 1.1
+                    
+                    camera.x = gx - ((camera.x + (WIDTH / 2)) / camera.zoom)
+                    camera.y = gy - ((camera.y + (HEIGHT / 2)) / camera.zoom)
+
+                    # camera.x += (mouse_world_x * camera.zoom * 1.1) / WIDTH
+                    # camera.y += (mouse_world_y * camera.zoom * 1.1) / HEIGHT
+                    # cz = camera.zoom * camera.zoom * 1.1
+
+                    # camera.x += mouse_x / WIDTH
+
+                    # camera.x = mouse_world_x - mouse_x / camera.zoom
+                    # camera.x = mouse_world_x - mouse_x / camera.zoom
+                    # camera.y = mouse_world_y - mouse_y / camera.zoom
+
+                    # camera.x = mouse_world_x - mouse_x * camera.zoom
+                    # camera.y = mouse_world_y - mouse_y / cz
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:  # Left mouse button
+                    panning = False
+            elif event.type == pygame.MOUSEMOTION:
+                if panning:
+                    dx, dy = event.pos[0] - pan_start[0], event.pos[1] - pan_start[1]
+                    # camera.x -= dx / camera.zoom
+                    # camera.y -= dy / camera.zoom
+                    camera.x -= dx
+                    camera.y -= dy
+                    pan_start = event.pos
         
-        draw_grid(start, end, walls, paths)
+        draw_grid(start, end, walls, paths, final_path)
     
     pygame.quit()
-    # sys.exit()
 
 def get_color(seed):
     random.seed(seed)
     return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
 final_answer = 0
-input_file_name = "test_input_1.txt" # 140
-# input_file_name = "test_input_2.txt" # 772
+input_file_name = "test_input_1.txt" # 7036
+input_file_name = "test_input_2.txt" # 11048
 # input_file_name = "test_input_3.txt" # 1930
 # input_file_name = "test_input_4.txt" # 21 * 38 = 798
-# input_file_name = "real_input.txt"
+input_file_name = "real_input.txt"
 debug = True
 
 num_rows = 0
@@ -89,7 +233,7 @@ num_cols = 0
 lines = []
 direction_string = ""
 
-def print_i(string_to_print, debug_priorty=1):
+def print_i(string_to_print, debug_priorty=0):
     global debug
     if debug and debug_priorty > 0:
         print(string_to_print)
@@ -120,7 +264,8 @@ class Cell:
     # Parent cell's column index
         self.parent_j = 0
  # Total cost of the cell (g + h)
-        self.f = float('inf')
+        # self.f = float('inf')
+        self.fs = {}
     # Cost from start to this cell
         self.g = float('inf')
     # Heuristic cost from this cell to destination
@@ -167,9 +312,9 @@ def calc_dir_dist(dir_1, dir_2):
     
     return dir_dist
 
-def trace_path(cell_details, dest):
+def trace_path(cell_details, src, dest):
     # to make up for when we check the destination whose final direction doesn't matter
-    num_turns = -1
+    num_turns = 0
     print("The Path is ")
     path = []
     row = dest[0]
@@ -186,13 +331,17 @@ def trace_path(cell_details, dest):
 
     # works becaue the parent of src is src
     # Trace the path from destination to source using parent cells
+    temp_g = 0
     while not (cell_details[row][col].parent_i == row and cell_details[row][col].parent_j == col):
         # path.append((row, col))
         possibilities.append([row, col])
         last_dir = dir
-        path.append((col, row, f"dir: {dir}"))
+        # path.append((col, row, f"dir: {dir}"))
+        # path.append([col, row])
         temp_row = cell_details[row][col].parent_i
         temp_col = cell_details[row][col].parent_j
+        temp_g = cell_details[row][col].g
+        path.append((col, row, temp_g))
         row = temp_row
         col = temp_col
         dir = cell_details[row][col].dir
@@ -206,17 +355,39 @@ def trace_path(cell_details, dest):
 
     # Add the source cell to the path
     # path.append((row, col))
-    path.append((col, row, f"dir: {dir}"))
-    num_turns += calc_dir_dist(dir, last_dir)
+    # path.append((col, row, f"dir: {dir}"))
+    # path.append([col, row])
+    # path.append((col, row))
+    temp_g = cell_details[row][col].g
+    path.append((col, row, temp_g))
+    # num_turns += calc_dir_dist(dir, last_dir)
     # Reverse the path to get the path from source to destination
     path.reverse()
+
+
+
+    walls = []
+    opens = []
+    for cd_y in range(len(cell_details)):
+        for cd_x in range(len(cell_details[0])):
+            cd = cell_details[cd_y][cd_x]
+            print_i(f"\tCD[{[cd_x, cd_y]}]: g = {cd.g}, dir = {cd.dir}, parent = {[cd.parent_j, cd.parent_i]}")
+            if cd.dir == -1:
+                walls.append([cd_x, cd_y])
+            elif [cd_x, cd_y] != src and [cd_x, cd_y] != dest:
+                opens.append([cd_x, cd_y, cd.g])
+            # elif [x, y] in path:
+            #     opens.remove()
+    main_pygame(src, dest, walls, opens, path)
+
+
 
     # Print the path
     for i in path:
         print("->", i, end=" ")
-    print(f"\npath length = {len(path)}")
+    print(f"\npath length = {len(path) - 1}")
     print(f"num_turns = {num_turns}")
-    print(f"final_score = {len(path) + num_turns * 1000}")
+    print(f"final_score = {len(path) - 1 + num_turns * 1000}")
     print()
 
 # Implement the A* search algorithm
@@ -301,19 +472,8 @@ def a_star_search(grid, src, dest):
                     cell_details[new_i][new_j].dir = directions.index(dir)
                     print("\n\n\n\nThe destination cell is found")
                     
-                    walls = []
-                    path = []
-                    for cd_y in range(len(cell_details)):
-                        for cd_x in range(len(cell_details[0])):
-                            cd = cell_details[cd_y][cd_x]
-                            print_i(f"\tCD[{[cd_x, cd_y]}]: g = {cd.g}, dir = {cd.dir}, parent = {[cd.parent_j, cd.parent_i]}")
-                            if cd.dir == -1:
-                                walls.append([cd_x, cd_y])
-                            elif [cd_x, cd_y] != src and [cd_x, cd_y] != dest:
-                                path.append([cd_x, cd_y, cd.g])
-                    main_pygame(src, dest, walls, path)
                     # Trace and print the path from source to destination
-                    trace_path(cell_details, dest)
+                    trace_path(cell_details, src, dest)
                     found_dest = True
 
                     return
@@ -327,17 +487,28 @@ def a_star_search(grid, src, dest):
                     g_new = cell_details[i][j].g + 1.0 + dir_dist * 1000
                     print_i(f"\t\tg went from {cell_details[i][j].g} to {g_new}")
 
-                    # h_new = calculate_h_value(new_i, new_j, dest)
-                    h_new = 0
+                    h_new = calculate_h_value(new_i, new_j, dest)
+                    # h_new = 0
                     # f_new = g_new + h_new
                     f_new = g_new + h_new
+                    old_coords = str([i, j])
 
+                    should_update_cell = False
                     # If the cell is not in the open list or the new f value is smaller
-                    if cell_details[new_i][new_j].f == float('inf') or cell_details[new_i][new_j].f > f_new:
+                    # if cell_details[new_i][new_j].f == float('inf') or cell_details[new_i][new_j].f > f_new:
+                    if old_coords not in cell_details[new_i][new_j].fs.keys():
+                        should_update_cell = True
+                    
+                    elif cell_details[new_i][new_j].fs[old_coords] > f_new:
+                        should_update_cell = True
+                        
+                    if should_update_cell:
+                        should_update_cell = False
                         # Add the cell to the open list
                         heapq.heappush(open_list, (f_new, new_i, new_j))
                         # Update the cell details
-                        cell_details[new_i][new_j].f = f_new
+                        # cell_details[new_i][new_j].f = f_new
+                        cell_details[new_i][new_j].fs[old_coords] = f_new
                         cell_details[new_i][new_j].g = g_new
                         cell_details[new_i][new_j].h = h_new
                         cell_details[new_i][new_j].parent_i = i
@@ -432,3 +603,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# 94448 is too high
+# 94447 is too high

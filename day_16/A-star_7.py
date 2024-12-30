@@ -7,81 +7,149 @@ import random
 import re
 import string
 
+# # Set up the display
+# scale = 2.0
+# WIDTH, HEIGHT = int(400*scale), int(300*scale)
+# GRID_SIZE = int(20*scale)
+# SCREEN = None
+
 import pygame
 import sys
+# import numpy as np
+
+# Initialize Pygame
+pygame.init()
+
+# # Set up the display
+# WIDTH, HEIGHT = 1080, 720
+# SCREEN = None
+
+# # Colors
+# WHITE = (255, 255, 255)
+# BLACK = (0, 0, 0)
+# RED = (255, 0, 0)
+# GREEN = (0, 255, 0)
+# BLUE = (0, 0, 255)
+# GRAY = (50, 50, 50)
+
 
 # Set up the display
-scale = 1.5
-WIDTH, HEIGHT = int(800*scale), int(600*scale)
-GRID_SIZE = int(20*scale)
-SCREEN = None
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Grid Pan and Zoom Example")
+
+# Create a 2D array of walls (1 for wall, 0 for empty)
+# GRID_SIZE = 50
+# walls = np.random.choice([0, 1], size=(GRID_SIZE, GRID_SIZE), p=[0.7, 0.3])
 
 # Colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
+WALL_COLOR = (100, 100, 100)  # Gray
+EMPTY_COLOR = (255, 255, 255)  # White
 
+clock = pygame.time.Clock()
 
-def draw_grid(start, end, walls, paths):
-    global SCREEN
-    SCREEN.fill(WHITE)
-    
-    # Draw grid lines
-    for x in range(0, WIDTH, GRID_SIZE):
-        pygame.draw.line(SCREEN, BLACK, (x, 0), (x, HEIGHT))
-    for y in range(0, HEIGHT, GRID_SIZE):
-        pygame.draw.line(SCREEN, BLACK, (0, y), (WIDTH, y))
-    
-    # Draw squares at specified positions
-    for pos in [start, end]:
-        x, y = pos
-        pygame.draw.rect(SCREEN, RED, (x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+def draw_grid(start, end, walls, paths, final_path, zoom, pos_x, pos_y):
+    cell_size = zoom
+    color_dict = {"walls": [walls, (100, 100, 100)], "final_path": [final_path, (0, 255, 0)], "start": [[start], (255, 0, 0)], "end": [[end], (255, 0, 0)]}
+    x = -1
+    y = -1
+    score = -1
 
-    # Draw squares at specified positions
-    for pos in walls:
-        x, y = pos
-        pygame.draw.rect(SCREEN, BLACK, (x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+    for _, (k, v) in enumerate(color_dict.items()):
+        for pos in v[0]:
+            # print(pos)
+            if k == "final_path":
+                x, y, score = pos
+            else:
+                x, y = pos
+            rect = pygame.Rect(
+                int(x * cell_size + pos_x),
+                int(y * cell_size + pos_y),
+                int(cell_size),
+                int(cell_size)
+            )
+            # color = WALL_COLOR
+            color = v[1]
+            pygame.draw.rect(screen, color, rect)
+            pygame.draw.rect(screen, (0, 0, 0), rect, 1)  # Draw cell borders
 
-    for pos in paths:
-        x, y, score = pos
-        pygame.draw.rect(SCREEN, (50, 50, 50), (x * GRID_SIZE, y * GRID_SIZE, GRID_SIZE, GRID_SIZE))
+def main_pygame(start, end, walls, paths, final_path):
+    # global running
+    # global panning
+    # global pan_start_pos
 
-    pygame.display.flip()
+    # Initial position and zoom level
+    pos_x, pos_y = 0, 0
+    zoom = 10.0
+    zoom_speed = 0.1
 
-def main_pygame(start, end, walls, paths):
-    global SCREEN
-    
-    # Initialize Pygame
-    pygame.init()
-    SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("Grid with Squares and Walls")
-
+    # Main game loop
     running = True
+    panning = False
+    pan_start_pos = None
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:  # Check if the ESC key is pressed
-                    running = False
-        
-        draw_grid(start, end, walls, paths)
-    
-    pygame.quit()
-    # sys.exit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Left mouse button
+                    panning = True
+                    pan_start_pos = event.pos
+                elif event.button == 4:  # Scroll up
+                    # Calculate mouse position in image space
+                    mouse_x, mouse_y = event.pos
+                    img_x = (mouse_x - pos_x) / zoom
+                    img_y = (mouse_y - pos_y) / zoom
+                    
+                    # Zoom in
+                    zoom *= (1 + zoom_speed)
+                    
+                    # Adjust position to zoom towards mouse
+                    pos_x = mouse_x - img_x * zoom
+                    pos_y = mouse_y - img_y * zoom
+                elif event.button == 5:  # Scroll down
+                    # Calculate mouse position in image space
+                    mouse_x, mouse_y = event.pos
+                    img_x = (mouse_x - pos_x) / zoom
+                    img_y = (mouse_y - pos_y) / zoom
+                    
+                    # Zoom out
+                    zoom /= (1 + zoom_speed)
+                    
+                    # Adjust position to zoom towards mouse
+                    pos_x = mouse_x - img_x * zoom
+                    pos_y = mouse_y - img_y * zoom
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:  # Left mouse button
+                    panning = False
+            elif event.type == pygame.MOUSEMOTION:
+                if panning:
+                    mouse_x, mouse_y = event.pos
+                    pos_x += mouse_x - pan_start_pos[0]
+                    pos_y += mouse_y - pan_start_pos[1]
+                    pan_start_pos = event.pos
+        # Clear the screen
+        screen.fill((0, 0, 0))
+
+        draw_grid(start, end, walls, paths, final_path, zoom, pos_x, pos_y)
+
+        # Update the display
+        pygame.display.flip()
+
+        # Cap the frame rate
+        clock.tick(60)
 
 def get_color(seed):
     random.seed(seed)
     return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
 final_answer = 0
-input_file_name = "test_input_1.txt" # 140
-# input_file_name = "test_input_2.txt" # 772
+input_file_name = "test_input_1.txt" # 7036
+input_file_name = "test_input_2.txt" # 11048
 # input_file_name = "test_input_3.txt" # 1930
 # input_file_name = "test_input_4.txt" # 21 * 38 = 798
-# input_file_name = "real_input.txt"
+input_file_name = "real_input.txt"
 debug = True
 
 num_rows = 0
@@ -89,7 +157,7 @@ num_cols = 0
 lines = []
 direction_string = ""
 
-def print_i(string_to_print, debug_priorty=1):
+def print_i(string_to_print, debug_priorty=0):
     global debug
     if debug and debug_priorty > 0:
         print(string_to_print)
@@ -120,7 +188,8 @@ class Cell:
     # Parent cell's column index
         self.parent_j = 0
  # Total cost of the cell (g + h)
-        self.f = float('inf')
+        # self.f = float('inf')
+        self.fs = {}
     # Cost from start to this cell
         self.g = float('inf')
     # Heuristic cost from this cell to destination
@@ -167,9 +236,9 @@ def calc_dir_dist(dir_1, dir_2):
     
     return dir_dist
 
-def trace_path(cell_details, dest):
+def trace_path(cell_details, src, dest):
     # to make up for when we check the destination whose final direction doesn't matter
-    num_turns = -1
+    num_turns = 0
     print("The Path is ")
     path = []
     row = dest[0]
@@ -186,13 +255,17 @@ def trace_path(cell_details, dest):
 
     # works becaue the parent of src is src
     # Trace the path from destination to source using parent cells
+    temp_g = 0
     while not (cell_details[row][col].parent_i == row and cell_details[row][col].parent_j == col):
         # path.append((row, col))
         possibilities.append([row, col])
         last_dir = dir
-        path.append((col, row, f"dir: {dir}"))
+        # path.append((col, row, f"dir: {dir}"))
+        # path.append([col, row])
         temp_row = cell_details[row][col].parent_i
         temp_col = cell_details[row][col].parent_j
+        temp_g = cell_details[row][col].g
+        path.append((col, row, temp_g))
         row = temp_row
         col = temp_col
         dir = cell_details[row][col].dir
@@ -206,17 +279,39 @@ def trace_path(cell_details, dest):
 
     # Add the source cell to the path
     # path.append((row, col))
-    path.append((col, row, f"dir: {dir}"))
-    num_turns += calc_dir_dist(dir, last_dir)
+    # path.append((col, row, f"dir: {dir}"))
+    # path.append([col, row])
+    # path.append((col, row))
+    temp_g = cell_details[row][col].g
+    path.append((col, row, temp_g))
+    # num_turns += calc_dir_dist(dir, last_dir)
     # Reverse the path to get the path from source to destination
     path.reverse()
+
+
+
+    walls = []
+    opens = []
+    for cd_y in range(len(cell_details)):
+        for cd_x in range(len(cell_details[0])):
+            cd = cell_details[cd_y][cd_x]
+            print_i(f"\tCD[{[cd_x, cd_y]}]: g = {cd.g}, dir = {cd.dir}, parent = {[cd.parent_j, cd.parent_i]}")
+            if cd.dir == -1:
+                walls.append([cd_x, cd_y])
+            elif [cd_x, cd_y] != src and [cd_x, cd_y] != dest:
+                opens.append([cd_x, cd_y, cd.g])
+            # elif [x, y] in path:
+            #     opens.remove()
+    main_pygame(src, dest, walls, opens, path)
+
+
 
     # Print the path
     for i in path:
         print("->", i, end=" ")
-    print(f"\npath length = {len(path)}")
+    print(f"\npath length = {len(path) - 1}")
     print(f"num_turns = {num_turns}")
-    print(f"final_score = {len(path) + num_turns * 1000}")
+    print(f"final_score = {len(path) - 1 + num_turns * 1000}")
     print()
 
 # Implement the A* search algorithm
@@ -301,19 +396,8 @@ def a_star_search(grid, src, dest):
                     cell_details[new_i][new_j].dir = directions.index(dir)
                     print("\n\n\n\nThe destination cell is found")
                     
-                    walls = []
-                    path = []
-                    for cd_y in range(len(cell_details)):
-                        for cd_x in range(len(cell_details[0])):
-                            cd = cell_details[cd_y][cd_x]
-                            print_i(f"\tCD[{[cd_x, cd_y]}]: g = {cd.g}, dir = {cd.dir}, parent = {[cd.parent_j, cd.parent_i]}")
-                            if cd.dir == -1:
-                                walls.append([cd_x, cd_y])
-                            elif [cd_x, cd_y] != src and [cd_x, cd_y] != dest:
-                                path.append([cd_x, cd_y, cd.g])
-                    main_pygame(src, dest, walls, path)
                     # Trace and print the path from source to destination
-                    trace_path(cell_details, dest)
+                    trace_path(cell_details, src, dest)
                     found_dest = True
 
                     return
@@ -327,17 +411,28 @@ def a_star_search(grid, src, dest):
                     g_new = cell_details[i][j].g + 1.0 + dir_dist * 1000
                     print_i(f"\t\tg went from {cell_details[i][j].g} to {g_new}")
 
-                    # h_new = calculate_h_value(new_i, new_j, dest)
-                    h_new = 0
+                    h_new = calculate_h_value(new_i, new_j, dest)
+                    # h_new = 0
                     # f_new = g_new + h_new
                     f_new = g_new + h_new
+                    old_coords = str([i, j])
 
+                    should_update_cell = False
                     # If the cell is not in the open list or the new f value is smaller
-                    if cell_details[new_i][new_j].f == float('inf') or cell_details[new_i][new_j].f > f_new:
+                    # if cell_details[new_i][new_j].f == float('inf') or cell_details[new_i][new_j].f > f_new:
+                    if old_coords not in cell_details[new_i][new_j].fs.keys():
+                        should_update_cell = True
+                    
+                    elif cell_details[new_i][new_j].fs[old_coords] > f_new:
+                        should_update_cell = True
+                        
+                    if should_update_cell:
+                        should_update_cell = False
                         # Add the cell to the open list
                         heapq.heappush(open_list, (f_new, new_i, new_j))
                         # Update the cell details
-                        cell_details[new_i][new_j].f = f_new
+                        # cell_details[new_i][new_j].f = f_new
+                        cell_details[new_i][new_j].fs[old_coords] = f_new
                         cell_details[new_i][new_j].g = g_new
                         cell_details[new_i][new_j].h = h_new
                         cell_details[new_i][new_j].parent_i = i
@@ -432,3 +527,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# 94448 is too high
+# 94447 is too high
