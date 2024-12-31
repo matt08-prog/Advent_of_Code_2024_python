@@ -38,10 +38,6 @@ WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Grid Pan and Zoom Example")
 
-# Create a 2D array of walls (1 for wall, 0 for empty)
-# GRID_SIZE = 50
-# walls = np.random.choice([0, 1], size=(GRID_SIZE, GRID_SIZE), p=[0.7, 0.3])
-
 # Colors
 WALL_COLOR = (100, 100, 100)  # Gray
 EMPTY_COLOR = (255, 255, 255)  # White
@@ -161,6 +157,7 @@ input_file_name = "test_input_1.txt" # 7,036
 input_file_name = "test_input_2.txt" # 11,048
 input_file_name = "test_input_3.txt" # 21,148
 input_file_name = "test_input_4.txt" # 5078
+input_file_name = "test_input_5.txt" # ?
 # input_file_name = "real_input.txt"
 debug = True
 
@@ -211,6 +208,8 @@ class Cell:
 
         self.parent_dir = -1
         self.num_turns_from = {}
+
+        self.num_times_visited = 0
 
 
 # Define the size of the grid
@@ -399,18 +398,22 @@ def a_star_search(grid, src, dest):
         # directions = [(0, 1), (0, -1), (1, 0), (-1, 0),
         #               (1, 1), (1, -1), (-1, 1), (-1, -1)]
         # directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]
-        
-
 
         for dir in directions:
             new_i = i + dir[0]
             new_j = j + dir[1]
 
             # If the successor is valid, unblocked, and not visited
-            if is_valid(new_i, new_j) and is_unblocked(grid, new_i, new_j) and not closed_list[new_i][new_j]:
+            # if is_valid(new_i, new_j) and is_unblocked(grid, new_i, new_j) and not closed_list[new_i][new_j]:
+            # if is_valid(new_i, new_j) and is_unblocked(grid, new_i, new_j) and cell_details[new_i][new_j].num_times_visited < 3:
+            if is_valid(new_i, new_j) and is_unblocked(grid, new_i, new_j) and not closed_list[new_i][new_j] and cell_details[new_i][new_j].num_times_visited < 3:
+                cell_details[new_i][new_j].num_times_visited += 1
                 print_i(f"testing [{[j, i]}], dir: {cell_details[i][j].dir}")
+                
                 # If the successor is the destination
+                # Need to make sure that the src is in the destination's parentage or else stuck in loop
                 if is_destination(new_i, new_j, dest):
+                    # heapq.heappush(open_list, (f_new, new_i, new_j))
                     # Set the parent of the destination cell
                     cell_details[new_i][new_j].parent_i = i
                     cell_details[new_i][new_j].parent_j = j
@@ -419,14 +422,16 @@ def a_star_search(grid, src, dest):
                     p_j = j
                     cell_details[new_i][new_j].parent_dir = cell_details[p_i][p_j].dir
                     cell_details[new_i][new_j].dir = directions.index(dir)
-                    print("\n\n\n\nThe destination cell is found")
                     
-                    # Trace and print the path from source to destination
-                    trace_path(cell_details, src, dest)
-                    found_dest = True
+                    if cell_details[new_i][new_j].num_times_visited > 2:
+                        # Trace and print the path from source to destination
+                        print("\n\n\n\nThe destination cell is found")
+                        trace_path(cell_details, src, dest)
+                        found_dest = True
 
-                    return
+                        return
                 else:
+                    
                     dir_dist = calc_dir_dist(directions.index(dir), cell_details[i][j].dir)
                     print_i(f"\tcomparing last dir {cell_details[i][j].dir} to new dir {directions.index(dir)} = {dir_dist}")
 
@@ -450,8 +455,9 @@ def a_star_search(grid, src, dest):
                     
                     elif cell_details[new_i][new_j].fs[old_coords] > f_new:
                         should_update_cell = True
-                        
+                    
                     if should_update_cell:
+                        # closed_list[i][j] = False
                         should_update_cell = False
                         # Add the cell to the open list
                         heapq.heappush(open_list, (f_new, new_i, new_j))
